@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from fastapi.websockets import WebSocketState
 from app.connection_manager import ConnectionManagerNotification
@@ -6,6 +7,9 @@ from app import models, oauth2
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import asyncio
+
+logging.basicConfig(filename='log/notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -42,6 +46,7 @@ async def web_private_notification(
     try:
         user = await oauth2.get_current_user(token, session)
     except Exception as e:
+        logger.error(f"Error getting form user {user}", e, exc_info=True)
         await websocket.close(code=1008)  # Код закриття для політики
         return  # Припиняємо подальше виконання
 
@@ -66,6 +71,8 @@ async def web_private_notification(
     except WebSocketDisconnect:
         manager.disconnect(user.id)
     except Exception as e:
+        
+        logger.error(f"Excepting error {e}", exc_info=True)
         # Логування помилки
         print(f"Error in WebSocket: {e}")
         await websocket.close(code=1011)  # Несподівана помилка
