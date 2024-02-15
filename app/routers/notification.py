@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import websockets
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from fastapi.websockets import WebSocketState
 from app.connection_manager import ConnectionManagerNotification
@@ -6,60 +8,50 @@ from app.database import get_async_session
 from app import models, oauth2
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import asyncio
 
+
+# Configure logging
 logging.basicConfig(filename='log/notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
 manager = ConnectionManagerNotification()
 
 async def check_new_messages(session: AsyncSession, user_id: int):
     """
-    Перевіряє наявність нових повідомлень для користувача.
+    Retrieve a list of all the unread private messages sent to the specified user.
 
     Args:
-        session (AsyncSession): Сесія бази даних.
-        user_id (int): ID користувача.
+        session (AsyncSession): The database session.
+        user_id (int): The ID of the user.
 
     Returns:
-        List[models.PrivateMessage]: Список нових повідомлень.
+        List[Dict[str, int]]: Information about unread messages.
     """
     new_messages = await session.execute(
         select(models.PrivateMessage)
         .where(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
     )
-    messages = new_messages.scalars().all()
-    
-    # Отримання sender_id для кожного повідомлення
-    messages_info = [{"sender_id": message.sender_id, "message_id": message.id} for message in messages]
-    return messages_info
-    
+    return [{"sender_id": message.sender_id, "message_id": message.id} for message in new_messages.scalars().all()]
 
 @router.websocket("/notification")
-async def web_private_notification(
-    websocket: WebSocket,
-    token: str,
-    session: AsyncSession = Depends(get_async_session)
-):
+async def web_private_notification(websocket: WebSocket, token: str, session: AsyncSession = Depends(get_async_session)):
+    user = None
     try:
         user = await oauth2.get_current_user(token, session)
+        await manager.connect(websocket, user.id)
     except Exception as e:
-        logger.error(f"Error getting form user", e, exc_info=True)
-        await websocket.close(code=1008)  # Код закриття для політики
-        return  # Припиняємо подальше виконання
-
-    await manager.connect(websocket, user.id)
+        logger.error(f"Error authenticating user: {e}", exc_info=True)
+        await websocket.close(code=1008)
+        return
 
     try:
         while True:
-            # Перевіряємо статус WebSocket перед відправленням повідомлень
             if websocket.client_state != WebSocketState.CONNECTED:
-                break  # Припиняємо цикл, якщо з'єднання не активне
+                await websocket.send_json({...})
 
             new_messages_info = await check_new_messages(session, user.id)
-            if new_messages_info:
+            try:
                 for message_info in new_messages_info:
                     await websocket.send_json({
                         "type": "new_message",
@@ -67,14 +59,17 @@ async def web_private_notification(
                         "message_id": message_info["message_id"]
                     })
 
-            await asyncio.sleep(5)  # N секунд чекання, можна налаштувати
+                await asyncio.sleep(5)
+
+            except websockets.exceptions.ConnectionClosedOK:
+                logger.info(f"WebSocket connection was closed")
+                
     except WebSocketDisconnect:
-        manager.disconnect(user.id)
-        await websocket.close()
+        logger.info(f"WebSocket disconnected for user {user.id}")
     except Exception as e:
-        
-        logger.error(f"Excepting error {e}", exc_info=True)
-        # Логування помилки
-        print(f"Error in WebSocket: {e}")
-        await websocket.close(code=1011)  # Несподівана помилка
+        logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
+    finally:
+        if user:
+            manager.disconnect(user.id, websocket)
+        await websocket.close()
 
