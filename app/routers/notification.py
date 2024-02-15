@@ -46,7 +46,7 @@ async def web_private_notification(
     try:
         user = await oauth2.get_current_user(token, session)
     except Exception as e:
-        logger.error(f"Error getting form user {user}", e, exc_info=True)
+        logger.error(f"Error getting form user", e, exc_info=True)
         await websocket.close(code=1008)  # Код закриття для політики
         return  # Припиняємо подальше виконання
 
@@ -54,7 +54,7 @@ async def web_private_notification(
 
     try:
         while True:
-            # Перевіряємо статус WebSocket перед відправкою повідомлень
+            # Перевіряємо статус WebSocket перед відправленням повідомлень
             if websocket.client_state != WebSocketState.CONNECTED:
                 break  # Припиняємо цикл, якщо з'єднання не активне
 
@@ -70,6 +70,7 @@ async def web_private_notification(
             await asyncio.sleep(5)  # N секунд чекання, можна налаштувати
     except WebSocketDisconnect:
         manager.disconnect(user.id)
+        await websocket.close()
     except Exception as e:
         
         logger.error(f"Excepting error {e}", exc_info=True)
