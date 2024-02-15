@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 # Configure logging
-logging.basicConfig(filename='log/notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='_log/notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
