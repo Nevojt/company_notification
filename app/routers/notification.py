@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 manager = ConnectionManagerNotification()
 
+unread_messages = {}
 async def check_new_messages(session: AsyncSession, user_id: int):
     """
     Retrieve a list of all the unread private messages sent to the specified user.
@@ -44,23 +45,33 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
         logger.error(f"Error authenticating user: {e}", exc_info=True)
         await websocket.close(code=1008)
         return
-
+    
+    new_messages_list = []
     try:
         while True:
             if websocket.client_state != WebSocketState.CONNECTED:
                 await websocket.send_json({...})
 
-            new_messages_info = await check_new_messages(session, user.id)
             try:
+                new_messages_info = await check_new_messages(session, user.id)
+                updated = False
+
+                for message in list(new_messages_list):
+                    if message not in new_messages_info:
+                        new_messages_list.remove(message)
+                        updated = True
+
                 for message_info in new_messages_info:
+                    if message_info not in new_messages_list:
+                        new_messages_list.append(message_info)
+                        updated = True
+
+                if updated:
                     await websocket.send_json({
-                        "type": "new_message",
-                        "sender_id": message_info["sender_id"],
-                        "message_id": message_info["message_id"]
+                        "new_message": new_messages_list
                     })
-
-                await asyncio.sleep(5)
-
+                # await asyncio.sleep(5)
+                
             except websockets.exceptions.ConnectionClosedOK:
                 logger.info(f"WebSocket connection was closed")
                 
@@ -70,6 +81,6 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
         logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
     finally:
         if user:
-            manager.disconnect(user.id, websocket)
+            await manager.disconnect(user.id, websocket)
         await websocket.close()
 
