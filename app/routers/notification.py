@@ -29,11 +29,16 @@ async def check_new_messages(session: AsyncSession, user_id: int):
     Returns:
         List[Dict[str, int]]: Information about unread messages.
     """
-    new_messages = await session.execute(
-        select(models.PrivateMessage)
-        .where(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
-    )
-    return [{"sender_id": message.sender_id, "message_id": message.id} for message in new_messages.scalars().all()]
+    try:
+        new_messages = await session.execute(
+            select(models.PrivateMessage)
+            .where(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
+        )
+        return [{"sender_id": message.sender_id, "message_id": message.id} for message in new_messages.scalars().all()]
+    except Exception as e:
+        logger.error(f"Error retrieving new messages: {e}", exc_info=True)
+        return []
+    
 
 @router.websocket("/notification")
 async def web_private_notification(websocket: WebSocket, token: str, session: AsyncSession = Depends(get_async_session)):
@@ -74,8 +79,14 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
                 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for user {user.id}")
+        await manager.disconnect(user.id, websocket)
+        await websocket.close()
+        
     except Exception as e:
+        await manager.disconnect(user.id, websocket)
+        await websocket.close()
         logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
+        
     finally:
         if user and websocket.client_state == WebSocketState.CONNECTED:
             await manager.disconnect(user.id, websocket)
