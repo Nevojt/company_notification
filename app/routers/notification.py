@@ -48,10 +48,7 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
     
     new_messages_list = []
     try:
-        while True:
-            if websocket.client_state != WebSocketState.CONNECTED:
-                await websocket.send_json({...})
-
+        while websocket.client_state == WebSocketState.CONNECTED:
             try:
                 new_messages_info = await check_new_messages(session, user.id)
                 updated = False
@@ -80,7 +77,7 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
     except Exception as e:
         logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
     finally:
-        if user:
+        if user and websocket.client_state == WebSocketState.CONNECTED:
             await manager.disconnect(user.id, websocket)
-        await websocket.close()
+            await websocket.close()
 
