@@ -34,11 +34,28 @@ async def check_new_messages(session: AsyncSession, user_id: int):
             select(models.PrivateMessage)
             .where(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
         )
-        return [{"sender_id": message.sender_id, "message_id": message.id} for message in new_messages.scalars().all()]
+        user_info = await session.execute(select(models.User)
+                                          .where(models.User.id == user_id)
+                                          )
+        
+        new_messages = new_messages.scalars().all()
+        user_info = user_info.scalars().all()
+        
+        
+        for user in user_info:
+            user_name = user.user_name
+        
+        return [{
+            "sender_id": message.sender_id,
+            "sender": user_name,
+            "message_id": message.id,
+            "message": message.messages,
+            } for message in new_messages]
+        
     except Exception as e:
         logger.error(f"Error retrieving new messages: {e}", exc_info=True)
         return []
-    
+
 
 @router.websocket("/notification")
 async def web_private_notification(websocket: WebSocket, token: str, session: AsyncSession = Depends(get_async_session)):
@@ -46,14 +63,21 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
     try:
         user = await oauth2.get_current_user(token, session)
         await manager.connect(websocket, user.id)
+        logger.info(f"WebSocket connected for user {user.id}")
     except Exception as e:
         logger.error(f"Error authenticating user: {e}", exc_info=True)
         await websocket.close(code=1008)
         return
     
     new_messages_list = []
+    
     try:
-        while websocket.client_state == WebSocketState.CONNECTED:
+        while True:
+
+            if websocket.client_state != WebSocketState.CONNECTED:
+                logger.info(f"WebSocket not connected for user {user.id}, breaking the loop")
+                break
+            
             try:
                 new_messages_info = await check_new_messages(session, user.id)
                 updated = False
@@ -72,23 +96,20 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
                     await websocket.send_json({
                         "new_message": new_messages_list
                     })
-                # await asyncio.sleep(5)
-                
-            except websockets.exceptions.ConnectionClosedOK:
-                logger.info(f"WebSocket connection was closed")
+                    
+            except websockets.exceptions.ConnectionClosedOK as e:
+                logger.info(f"WebSocket connection was closed for user {user.id}: {e}")
+                await websocket.close()
+            await asyncio.sleep(1)
                 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for user {user.id}")
-        await manager.disconnect(user.id, websocket)
-        await websocket.close()
         
     except Exception as e:
-        await manager.disconnect(user.id, websocket)
-        await websocket.close()
         logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
         
     finally:
-        if user and websocket.client_state == WebSocketState.CONNECTED:
+        if user:
             await manager.disconnect(user.id, websocket)
-            await websocket.close()
-
+            if websocket.client_state in [WebSocketState.CONNECTED, WebSocketState.DISCONNECTED]:
+                await websocket.close()
