@@ -35,7 +35,7 @@ async def check_new_messages(session: AsyncSession, user_id: int):
             .where(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
         )
         user_info = await session.execute(select(models.User)
-                                          .where(models.User.id == models.PrivateMessage.recipient_id)
+                                          .where(models.User.id == models.PrivateMessage.sender_id)
                                           )
         
         new_messages = new_messages.scalars().all()
