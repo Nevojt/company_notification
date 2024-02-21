@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.orm import relationship
 from .database import Base
 
 
@@ -14,7 +15,7 @@ class PrivateMessage(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     is_read = Column(Boolean, nullable=False, default=True)
     
-    
+    sender = relationship("User", foreign_keys=[sender_id])
 
 
 class User(Base):

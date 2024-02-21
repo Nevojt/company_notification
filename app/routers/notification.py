@@ -8,6 +8,7 @@ from app.database import get_async_session
 from app import models, oauth2
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 # Configure logging
@@ -30,27 +31,28 @@ async def check_new_messages(session: AsyncSession, user_id: int):
         List[Dict[str, int]]: Information about unread messages.
     """
     try:
+        # Fetch unread private messages and corresponding sender information
         new_messages = await session.execute(
             select(models.PrivateMessage)
-            .where(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
+            .options(selectinload(models.PrivateMessage.sender))
+            .join(models.User, models.PrivateMessage.sender_id == models.User.id)
+            .filter(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
         )
-        user_info = await session.execute(select(models.User)
-                                          .where(models.User.id == models.PrivateMessage.sender_id)
-                                          )
-        
+
+        # Retrieve the results as a list
         new_messages = new_messages.scalars().all()
-        user_info = user_info.scalars().all()
-        
-        
-        for user in user_info:
-            user_name = user.user_name
-        
-        return [{
-            "sender_id": message.sender_id,
-            "sender": user_name,
-            "message_id": message.id,
-            "message": message.messages,
-            } for message in new_messages]
+
+        # Extract relevant data for each message
+        message_data = []
+        for message in new_messages:
+            message_data.append({
+                "sender_id": message.sender_id,
+                "sender": message.sender.user_name,
+                "message_id": message.id,
+                "message": message.messages,
+            })
+
+        return message_data
         
     except Exception as e:
         logger.error(f"Error retrieving new messages: {e}", exc_info=True)
