@@ -98,11 +98,12 @@ async def web_private_notification(websocket: WebSocket, token: str, session: As
                     await websocket.send_json({
                         "new_message": new_messages_list
                     })
-                    
+                await asyncio.sleep(1)  
+                
             except websockets.exceptions.ConnectionClosedOK as e:
                 logger.info(f"WebSocket connection was closed for user {user.id}: {e}")
                 await websocket.close()
-            await asyncio.sleep(1)
+            
                 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for user {user.id}")
