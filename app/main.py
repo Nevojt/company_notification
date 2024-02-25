@@ -7,7 +7,12 @@ from app import models
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    docs_url="/docs",
+    title="Notification API",
+    description="Notification API",
+    version="0.0.1",
+)
 
 origins = ["*"]
 
