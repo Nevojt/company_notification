@@ -1,6 +1,6 @@
 import logging
 from fastapi import WebSocket
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set
 import asyncio
 from websockets.exceptions import WebSocketException
 from fastapi.websockets import WebSocketState
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class ConnectionManagerNotification:
     def __init__(self):
         self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.online_users: Set[int] = set()  # Set to keep track of online users
         self.lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, user_id: int):
@@ -19,6 +20,7 @@ class ConnectionManagerNotification:
         await websocket.accept()
         async with self.lock:
             self.active_connections.setdefault(user_id, []).append(websocket)
+            self.online_users.add(user_id)  # Add user to online users list
 
     async def disconnect(self, user_id: int, websocket: WebSocket):
         """ Disconnect a WebSocket connection for the user. """
@@ -27,6 +29,8 @@ class ConnectionManagerNotification:
                 if websocket in self.active_connections[user_id]:
                     await self._close_websocket(websocket)
                     self.active_connections[user_id].remove(websocket)
+                if not self.active_connections[user_id]:  # If no more connections for this user
+                    self.online_users.remove(user_id)  # Remove user from online users list
 
     async def _close_websocket(self, websocket: WebSocket):
         """ Close a WebSocket connection. """
@@ -35,6 +39,33 @@ class ConnectionManagerNotification:
                 await websocket.close()
             except WebSocketException as e:
                 logger.error("Error closing websocket \n" + str(e))
+                
+    async def is_user_connected(self, user_id: int) -> bool:
+        """ Check if the user has any active WebSocket connections. """
+        async with self.lock:
+            return user_id in self.active_connections and len(self.active_connections[user_id]) > 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # class ConnectionManagerNotification:
 #     def __init__(self):
