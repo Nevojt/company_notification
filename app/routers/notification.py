@@ -41,29 +41,31 @@ async def web_private_notification(
         while True:
             try:
                 # Wait for a message from the client
-                data = await websocket.receive_json()
-                if data.get("action") == "check_messages":
-                    new_messages_info = await check_new_messages(session, user.id)
-                    updated = False
+                # data = await websocket.receive_json()
+                # if data.get("action") == "check_messages":
+                new_messages_info = await check_new_messages(session, user.id)
+                updated = False
 
-                    for message in list(new_messages_list):
-                        if message not in new_messages_info:
-                            new_messages_list.remove(message)
-                            updated = True
+                for message in list(new_messages_list):
+                    if message not in new_messages_info:
+                        new_messages_list.remove(message)
+                        updated = True
 
-                    for message_info in new_messages_info:
-                        if message_info not in new_messages_list:
-                            new_messages_list.append(message_info)
-                            updated = True
+                for message_info in new_messages_info:
+                    if message_info not in new_messages_list:
+                        new_messages_list.append(message_info)
+                        updated = True
 
-                    if updated:
-                        await websocket.send_json({"new_message": new_messages_list})
+                if updated:
+                    await websocket.send_json({"new_message": new_messages_list})
+            except asyncio.exceptions.CancelledError:
+                break
                         
-            except WebSocketDisconnect:
-                print("WebSocket disconnect")
-                logger.info(f"WebSocket disconnected for user {user.id}")
-                manager.disconnect(websocket, user.id)
-                await update_user_status(session, user.id, False)
+    except WebSocketDisconnect:
+        print("WebSocket disconnect")
+        logger.info(f"WebSocket disconnected for user {user.id}")
+        manager.disconnect(websocket, user.id)
+        await update_user_status(session, user.id, False)
                     
 
     except Exception as e:
