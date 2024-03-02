@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import websockets
+import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.connection_manager import ConnectionManagerNotification
 from app.database import get_async_session
@@ -38,36 +39,34 @@ async def web_private_notification(
     try:
         await update_user_status(session, user.id, True)
         while True:
-
             try:
-                # if await online(session, user.id):
-                new_messages_info = await check_new_messages(session, user.id)
+                # Wait for a message from the client
+                data = await websocket.receive_json()
+                if data.get("action") == "check_messages":
+                    new_messages_info = await check_new_messages(session, user.id)
+                    updated = False
 
-                updated = False
+                    for message in list(new_messages_list):
+                        if message not in new_messages_info:
+                            new_messages_list.remove(message)
+                            updated = True
 
-                for message in list(new_messages_list):
-                    if message not in new_messages_info:
-                        new_messages_list.remove(message)
-                        updated = True
+                    for message_info in new_messages_info:
+                        if message_info not in new_messages_list:
+                            new_messages_list.append(message_info)
+                            updated = True
 
-                for message_info in new_messages_info:
-                    if message_info not in new_messages_list:
-                        new_messages_list.append(message_info)
-                        updated = True
+                    if updated:
+                        await websocket.send_json({"new_message": new_messages_list})
+                        
+            except WebSocketDisconnect:
+                print("WebSocket disconnect")
+                logger.info(f"WebSocket disconnected for user {user.id}")
+                manager.disconnect(websocket, user.id)
+                await update_user_status(session, user.id, False)
+                    
 
-                if updated:
-                    await websocket.send_json({
-                        "new_message": new_messages_list
-                    })
-
-                await asyncio.sleep(1)
-
-            except Exception as e:
-                logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
-
-    except WebSocketDisconnect:
-        logger.info(f"WebSocket disconnected for user {user.id}")
-    finally:
-        await update_user_status(session, user.id, False)
-        await manager.disconnect(websocket, user.id)
-        
+    except Exception as e:
+        logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
+    
+            
