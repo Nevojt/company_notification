@@ -41,7 +41,7 @@ async def web_private_notification(
         while True:
             try:
                 # Wait for a message from the client
-                # data = await websocket.receive_json()
+                # await websocket.receive_json("ping")
                 # if data.get("action") == "check_messages":
                 new_messages_info = await check_new_messages(session, user.id)
                 updated = False
