@@ -1,11 +1,9 @@
 import asyncio
 import logging
-import websockets
-import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.connection_manager import ConnectionManagerNotification
 from app.database import get_async_session
-from app import models, oauth2
+from app import oauth2
 from .func_notification import online, check_new_messages, update_user_status
 from sqlalchemy.ext.asyncio import AsyncSession
 
