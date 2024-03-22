@@ -38,9 +38,6 @@ async def web_private_notification(
         await update_user_status(session, user.id, True)
         while True:
             try:
-                # Wait for a message from the client
-                # await websocket.receive_json("ping")
-                # if data.get("action") == "check_messages":
                 new_messages_info = await check_new_messages(session, user.id)
                 updated = False
 
@@ -68,5 +65,9 @@ async def web_private_notification(
 
     except Exception as e:
         logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
+    finally:
+        await session.close()
+        print("Sessions closed")
+        
     
             

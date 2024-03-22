@@ -1,9 +1,13 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.orm import relationship
 from .database import Base
+from enum import Enum as PythonEnum
 
+class UserRole(str, PythonEnum):
+	user = "user"
+	admin = "admin"
 
 class PrivateMessage(Base):
     __tablename__ = 'private_messages'
@@ -20,13 +24,17 @@ class PrivateMessage(Base):
 
 class User(Base):
     __tablename__ = 'users'
+    
     id = Column(Integer, primary_key=True, nullable=False, index=True, autoincrement=True)
     email = Column(String, nullable=False, unique=True)
-    user_name = Column(String, nullable=False)
+    user_name = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
-    avatar = Column(String, nullable=False, server_default='https://tygjaceleczftbswxxei.supabase.co/storage/v1/object/public/image_bucket/content%20common%20chat/Avatar%20Desktop/avatar_default.jpg')
+    avatar = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     verified = Column(Boolean, nullable=False, server_default='false')
+    token_verify = Column(String, nullable=True)
+    refresh_token = Column(String, nullable=True)
+    role = Column(Enum(UserRole), default=UserRole.user)
     
 class User_Status(Base):
     __tablename__ = 'user_status' 
