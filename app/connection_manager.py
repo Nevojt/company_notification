@@ -13,7 +13,7 @@ class ConnectionManagerNotification:
         self.active_connections: List[WebSocket] = []
         self.user_connections: Dict[int, Tuple[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, user_id):
+    async def connect(self, websocket: WebSocket, user_id: int):
         """
         Accepts a new WebSocket connection and stores it in the list of active connections
         and the dictionary of user connections.
@@ -22,14 +22,15 @@ class ConnectionManagerNotification:
         print("Connect")
         # await update_user_status(session, user_id, is_online=bool)
         self.active_connections.append(websocket)
-        self.user_connections[user_id] = (websocket)
+        self.user_connections[user_id] = (websocket,)
 
-    def disconnect(self, websocket: WebSocket, user_id):
+    async def disconnect(self, websocket: WebSocket, user_id):
         """
         Removes a WebSocket connection from the list of active connections and the user
         connections dictionary when a user disconnects.
         """
         print("Disconnecting")
+        await websocket.close()
         self.active_connections.remove(websocket)
         self.user_connections.pop(user_id, None)
 

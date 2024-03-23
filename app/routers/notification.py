@@ -59,13 +59,14 @@ async def web_private_notification(
     except WebSocketDisconnect:
         print("WebSocket disconnect")
         # logger.info(f"WebSocket disconnected for user {user.id}")
-        manager.disconnect(websocket, user.id)
-        await update_user_status(session, user.id, False)
+        await manager.disconnect(websocket, user.id)
+        
                     
 
     except Exception as e:
         logger.error(f"Unexpected error in WebSocket: {e}", exc_info=True)
     finally:
+        await update_user_status(session, user.id, False)
         await session.close()
         print("Sessions closed")
         
