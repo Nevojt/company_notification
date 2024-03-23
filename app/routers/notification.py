@@ -58,7 +58,7 @@ async def web_private_notification(
                         
     except WebSocketDisconnect:
         print("WebSocket disconnect")
-        logger.info(f"WebSocket disconnected for user {user.id}")
+        # logger.info(f"WebSocket disconnected for user {user.id}")
         manager.disconnect(websocket, user.id)
         await update_user_status(session, user.id, False)
                     
