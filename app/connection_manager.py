@@ -11,8 +11,6 @@ class ConnectionManagerNotification:
     def __init__(self):
         # List to store active WebSocket connections
         self.active_connections: List[WebSocket] = []
-        
-        # Dictionary to map user IDs to their WebSocket connection, username, and avatar
         self.user_connections: Dict[int, Tuple[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, user_id):
