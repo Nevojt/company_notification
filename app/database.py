@@ -13,7 +13,13 @@ Base = declarative_base()
         
 ASINC_SQLALCHEMY_DATABASE_URL = f'postgresql+asyncpg://{settings.database_name}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_username}'
 
-engine_asinc = create_async_engine(ASINC_SQLALCHEMY_DATABASE_URL)
+engine_asinc = create_async_engine(ASINC_SQLALCHEMY_DATABASE_URL,
+                                   pool_size=20,
+                                   max_overflow=50,
+                                   pool_recycle=3600,
+                                   pool_pre_ping=True,
+                                   pool_timeout=30,
+                                   )
 async_session_maker = sessionmaker(engine_asinc, class_=AsyncSession, expire_on_commit=False)
 
 
