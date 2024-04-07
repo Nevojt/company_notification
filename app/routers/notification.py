@@ -34,7 +34,8 @@ async def web_private_notification(
     try:
         new_messages_set = set()
         while True:
-            await asyncio.sleep(5)  # Adjust the frequency as needed
+            await websocket.receive_text()
+            # await asyncio.sleep(1)  # Adjust the frequency as needed
             new_messages_info = await check_new_messages(session, user.id)
 
             # Using set for efficient operations
@@ -51,6 +52,7 @@ async def web_private_notification(
         logger.error(f"Unexpected error in WebSocket for user {user.id}: {e}", exc_info=True)
     finally:
         if user:
+            print("WebSocket disconnected")
             await update_user_status(session, user.id, False)
         await session.close()
         logger.info(f"WebSocket session closed for user {user.id}")
