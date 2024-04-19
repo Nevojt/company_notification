@@ -16,9 +16,11 @@ class PrivateMessage(Base):
     sender_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
     recipient_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
     messages = Column(String)
-    fileUrl = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     is_read = Column(Boolean, nullable=False, default=True)
+    fileUrl = Column(String)
+    edited = Column(Boolean, server_default='false')
+    id_return = Column(Integer)
     
     sender = relationship("User", foreign_keys=[sender_id])
 
