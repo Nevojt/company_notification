@@ -1,23 +1,35 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 from datetime import datetime
 
 
     
         
 class SocketModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     created_at: datetime
     receiver_id: int
     message: str
     user_name: str
     avatar: str
     is_read: bool
-    
-    class Config:
-        from_attributes = True
 
+class MessageSchema(BaseModel):
+    sender_id: int
+    sender: str
+    message_id: int
+    message: str
+    fileUrl: str
         
-
+class InvitationSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    room_id: int
+    sender_id: int
+    status: str
+    created_at: datetime
     
 class TokenData(BaseModel):
     id: Optional[int] = None

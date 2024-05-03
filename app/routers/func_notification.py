@@ -1,10 +1,13 @@
 
+from http.client import HTTPException
 import logging
 from app import models
 from sqlalchemy.future import select
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
+
+from app.schemas import InvitationSchema
 
 
 # Configure logging
@@ -49,6 +52,30 @@ async def check_new_messages(session: AsyncSession, user_id: int):
     except Exception as e:
         logger.error(f"Error retrieving new messages: {e}", exc_info=True)
         return []
+
+async def get_pending_invitations(session: AsyncSession, user_id: int):
+    try:
+        result = await session.execute(
+        select(models.RoomInvitation)
+        .options(joinedload(models.RoomInvitation.room), joinedload(models.RoomInvitation.sender))
+        .filter(
+            models.RoomInvitation.recipient_id == user_id,
+            models.RoomInvitation.status == 'pending'
+        )
+        )
+        invitations = result.scalars().all()
+
+        invitation_data = [
+        {
+            "room": invitation.room.name_room,
+            "sender": invitation.sender.user_name,
+            "invitation_id": invitation.id
+        } for invitation in invitations
+        ]
+
+        return invitation_data
+    except Exception as e:
+        logger.error(f"Error retrieving pending invitations: {e}", exc_info=True)
 
 
 async def online(session: AsyncSession, user_id: int):

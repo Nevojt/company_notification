@@ -4,7 +4,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.connection_manager import ConnectionManagerNotification
 from app.database import get_async_session
 from app import oauth2
-from .func_notification import online, check_new_messages, update_user_status
+from .func_notification import online, check_new_messages, update_user_status, get_pending_invitations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Configure logging
@@ -33,6 +33,7 @@ async def web_private_notification(
 
     try:
         new_messages_set = set()
+        new_invitations_set = set()
         while True:
             await websocket.receive_text()
             # await asyncio.sleep(1)  # Adjust the frequency as needed
@@ -43,6 +44,14 @@ async def web_private_notification(
             if new_messages_set != current_set:
                 new_messages_set = current_set
                 await websocket.send_json({"new_message": new_messages_info})
+                
+            
+            invitations = await get_pending_invitations(session, user.id)
+            invitation_set = set((inv['invitation_id'] for inv in invitations))
+            if new_invitations_set!= invitation_set:
+                new_invitations_set = invitation_set
+                await websocket.send_json({"new_invitations": invitations})
+                
     except asyncio.CancelledError:
     # Handle cancellation (cleanup, logging, etc.)
         pass  
