@@ -76,6 +76,7 @@ async def get_pending_invitations(session: AsyncSession, user_id: int):
         return invitation_data
     except Exception as e:
         logger.error(f"Error retrieving pending invitations: {e}", exc_info=True)
+        return []
 
 
 async def online(session: AsyncSession, user_id: int):
