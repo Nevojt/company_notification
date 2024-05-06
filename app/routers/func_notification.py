@@ -97,6 +97,20 @@ async def online(session: AsyncSession, user_id: int):
     return online
 
 async def update_user_status(session: AsyncSession, user_id: int, is_online: bool):
+    """
+    Update the status of a user in the database.
+
+    Args:
+        session (AsyncSession): The database session.
+        user_id (int): The ID of the user.
+        is_online (bool): The new status of the user.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If an error occurs while updating the user status.
+    """
     try:
         await session.execute(
             update(models.User_Status)
