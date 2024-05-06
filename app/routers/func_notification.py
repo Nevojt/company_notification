@@ -54,6 +54,18 @@ async def check_new_messages(session: AsyncSession, user_id: int):
         return []
 
 async def get_pending_invitations(session: AsyncSession, user_id: int):
+    """
+    Retrieve a list of all the pending room invitations sent to the specified user.
+
+    Args:
+        session (AsyncSession): The database session.
+        user_id (int): The ID of the user.
+
+    Returns:
+        List[Dict[str, Any]]: Information about the pending invitations. Each
+            invitation is represented as a dictionary with the keys "room",
+            "sender", and "invitation_id".
+    """
     try:
         result = await session.execute(
         select(models.RoomInvitation)
