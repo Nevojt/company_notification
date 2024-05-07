@@ -18,6 +18,23 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict):
+    """
+    Generates a JWT access token.
+
+    Args:
+        data (dict): The payload data to be included in the token.
+
+    Returns:
+        str: The encoded JWT access token.
+
+    Raises:
+        Exception: If there is an error encoding the token.
+
+    This function creates an access token by encoding the provided payload data
+    using the JWT library. The token's expiration time is set to the current time
+    plus the specified ACCESS_TOKEN_EXPIRE_MINUTES. The encoded token is then
+    returned.
+    """
     to_encode = data.copy()
 
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
