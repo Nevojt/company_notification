@@ -46,7 +46,21 @@ def create_access_token(data: dict):
 
 
 def verify_access_token(token: str, credentials_exception):
+    """
+    Verifies the provided access token.
 
+    Args:
+        token (str): The access token to be verified.
+        credentials_exception (HTTPException): An HTTPException object to be raised if the token cannot be verified.
+
+    Returns:
+        schemas.TokenData: The payload data of the verified token, including the user ID.
+
+    Raises:
+        HTTPException: If the token cannot be verified.
+
+    This function verifies the provided access token by decoding it using the JWT library. It extracts the user ID from the payload and returns it as a schemas.TokenData object. If the token cannot be verified, it raises an HTTPException with a status code of 401 (Unauthorized) and a custom error message.
+    """
     try:
 
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
