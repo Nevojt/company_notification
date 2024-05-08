@@ -74,6 +74,21 @@ def verify_access_token(token: str, credentials_exception):
     return token_data
     
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(database.get_async_session)):
+    """
+    Retrieves the current user from the database based on the provided access token.
+
+    Args:
+        token (str): The access token to be used for authentication.
+        db (AsyncSession): The database session to be used for querying the user data.
+
+    Returns:
+        models.User: The current user object if the token is valid, otherwise None.
+
+    Raises:
+        HTTPException: If the token cannot be verified or the user does not exist in the database.
+
+    This function retrieves the current user from the database based on the provided access token. It first verifies the access token by decoding it and extracting the user ID. Then, it queries the database using the user ID to retrieve the user object. If the token cannot be verified or the user does not exist in the database, it raises an HTTPException with a status code of 401 (Unauthorized) and a custom error message.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, 
         detail="Could not validate credentials", 
