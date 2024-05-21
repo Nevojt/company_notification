@@ -36,5 +36,5 @@ jobs:
         eval \$(ssh-agent -s) && \
         ssh-add ~/.ssh/git_conect_key && \
         cd /home/dmytro/notification && \
-        git pull origin main && \
+        git pull origin master && \
         echo $SSH_PASSWORD | sudo -S systemctl restart notification.service"
