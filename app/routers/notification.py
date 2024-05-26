@@ -23,6 +23,10 @@ async def web_private_notification(
     user = None
     try:
         user = await oauth2.get_current_user(token, session)
+        if user.blocked:
+            await websocket.close(code=1008)
+            return
+        
         await manager.connect(websocket, user.id)
         logger.info(f"WebSocket connected for user {user.id}")
         await update_user_status(session, user.id, True)

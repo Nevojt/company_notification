@@ -38,6 +38,7 @@ class User(Base):
     token_verify = Column(String, nullable=True)
     refresh_token = Column(String, nullable=True)
     role = Column(Enum(UserRole), default=UserRole.user)
+    blocked = Column(Boolean, nullable=False, server_default='false')
     
 class User_Status(Base):
     __tablename__ = 'user_status' 
