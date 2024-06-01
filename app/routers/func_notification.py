@@ -5,7 +5,7 @@ from app import models
 from sqlalchemy.future import select
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import joinedload
 
 from app.schemas import InvitationSchema
 
@@ -90,6 +90,10 @@ async def get_pending_invitations(session: AsyncSession, user_id: int):
         logger.error(f"Error retrieving pending invitations: {e}", exc_info=True)
         return []
 
+async def get_rooms_state(session: AsyncSession):
+    result = await session.execute(select(models.Rooms))
+    rooms = result.scalars().all()
+    return [(room.id, room.name_room, room.image_room, room.secret_room, room.owner) for room in rooms]
 
 async def online(session: AsyncSession, user_id: int):
     online = await session.execute(select(models.User_Status).filter(models.User_Status.user_id == user_id, models.User_Status.status == True))

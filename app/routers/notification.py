@@ -4,8 +4,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.connection_manager import ConnectionManagerNotification
 from app.database import get_async_session
 from app import oauth2
-from .func_notification import online, check_new_messages, update_user_status, get_pending_invitations
+from .func_notification import get_rooms_state, online, check_new_messages, update_user_status, get_pending_invitations
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+
 
 # Configure logging
 logging.basicConfig(filename='_log/notification.log', format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,9 +41,10 @@ async def web_private_notification(
     try:
         new_messages_set = set()
         new_invitations_set = set()
+        rooms_last_state = await get_rooms_state(session)
         while True:
             await websocket.receive_text()
-            # await asyncio.sleep(1)  # Adjust the frequency as needed
+                        
             new_messages_info = await check_new_messages(session, user.id)
 
             # Using set for efficient operations
@@ -55,6 +59,12 @@ async def web_private_notification(
             if new_invitations_set!= invitation_set:
                 new_invitations_set = invitation_set
                 await websocket.send_json({"new_invitations": invitations})
+                
+                        # Check for changes in the Rooms table
+            current_rooms_state = await get_rooms_state(session)
+            if rooms_last_state != current_rooms_state:
+                rooms_last_state = current_rooms_state
+                await websocket.send_json({"update": "room update"})
                 
     except asyncio.CancelledError:
     # Handle cancellation (cleanup, logging, etc.)
