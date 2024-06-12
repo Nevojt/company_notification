@@ -14,7 +14,7 @@ class PrivateMessage(Base):
     
     id = Column(Integer, primary_key=True, nullable=False, index=True, autoincrement=True)
     sender_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
-    reciver_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    receiver_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
     message = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     is_read = Column(Boolean, nullable=False, default=True)
