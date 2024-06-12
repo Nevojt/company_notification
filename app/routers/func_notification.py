@@ -30,7 +30,7 @@ async def check_new_messages(session: AsyncSession, user_id: int):
     try:
         # Fetch unread private messages and corresponding sender information
         new_messages = await session.execute(
-            select(models.PrivateMessage.id, models.PrivateMessage.messages, models.PrivateMessage.fileUrl, models.User.id.label('sender_id'), models.User.user_name)
+            select(models.PrivateMessage.id, models.PrivateMessage.message, models.PrivateMessage.fileUrl, models.User.id.label('sender_id'), models.User.user_name)
             .join(models.User, models.PrivateMessage.sender_id == models.User.id)
             .filter(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
         )
