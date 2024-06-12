@@ -32,7 +32,7 @@ async def check_new_messages(session: AsyncSession, user_id: int):
         new_messages = await session.execute(
             select(models.PrivateMessage.id, models.PrivateMessage.message, models.PrivateMessage.fileUrl, models.User.id.label('sender_id'), models.User.user_name)
             .join(models.User, models.PrivateMessage.sender_id == models.User.id)
-            .filter(models.PrivateMessage.recipient_id == user_id, models.PrivateMessage.is_read == True)
+            .filter(models.PrivateMessage.reciver_id == user_id, models.PrivateMessage.is_read == True)
         )
         messages = new_messages.all()
 
