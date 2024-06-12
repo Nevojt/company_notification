@@ -38,14 +38,15 @@ async def check_new_messages(session: AsyncSession, user_id: int):
 
         # Extract relevant data for each message
         message_data = [
-            {
-                "sender_id": message.sender_id,
-                "sender": message.user_name,
-                "message_id": message.id,
-                "message": message.messages,
-                "fileUrl": message.fileUrl,
-            } for message in messages
-        ]
+    {
+        "sender_id": message.sender_id,
+        "sender": message.user_name,
+        "message_id": message.id,
+        "message": message.message,
+        "fileUrl": message.fileUrl,
+    } for message in messages
+]
+
 
         return message_data
 
