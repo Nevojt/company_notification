@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Boolean, Enum
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.orm import relationship
@@ -39,6 +39,7 @@ class User(Base):
     refresh_token = Column(String, nullable=True)
     role = Column(Enum(UserRole), default=UserRole.user)
     blocked = Column(Boolean, nullable=False, server_default='false')
+    password_changed = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
 class User_Status(Base):
     __tablename__ = 'user_status' 
