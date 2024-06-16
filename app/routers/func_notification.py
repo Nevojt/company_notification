@@ -1,11 +1,14 @@
 
+from datetime import datetime
 from http.client import HTTPException
 from typing import Optional
 import logging
+
+import pytz
 from app import models
 from app.config import settings
 from sqlalchemy.future import select
-from sqlalchemy import update
+from sqlalchemy import update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -198,5 +201,35 @@ async def check_user_password(session: AsyncSession, user_id: int, clear: bool):
         return None
 
 
+async def user_online_start(session: AsyncSession, user_id: int):
+    try:
+        timezone = pytz.timezone('UTC')
+        current_time_utc = datetime.now(timezone)
+        logger.info(f"Inserting online session start for user {user_id} at {current_time_utc}")
         
+        result = await session.execute(
+            insert(models.UserOnlineTime).values(user_id=user_id, session_start=current_time_utc).returning(models.UserOnlineTime.id)
+        )
+        
+        online_session_id = result.scalar_one()
+        await session.commit()
+        logger.info(f"Inserted online session start with ID {online_session_id} for user {user_id}")
+        
+        return online_session_id
+    except Exception as e:
+        logger.error(f"Error starting user online session: {e}", exc_info=True)
+        return None
 
+
+async def user_online_end(session: AsyncSession, session_id: int):
+    try:
+        timezone = pytz.timezone('UTC')
+        current_time_utc = datetime.now(timezone)
+        await session.execute(
+            update(models.UserOnlineTime)
+            .where(models.UserOnlineTime.id == session_id)
+            .values(session_end=current_time_utc)
+        )
+        await session.commit()
+    except Exception as e:
+        logger.error(f"Error ending user online session: {e}", exc_info=True)

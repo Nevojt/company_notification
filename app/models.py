@@ -78,3 +78,13 @@ class RoomInvitation(Base):
     room = relationship("Rooms", back_populates="invitations")
     sender = relationship("User", foreign_keys=[sender_id])
     recipient = relationship("User", foreign_keys=[recipient_id])
+    
+    
+    
+class UserOnlineTime(Base):
+    __tablename__ = 'user_online_time'
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    session_start = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    session_end = Column(TIMESTAMP(timezone=True), nullable=True)

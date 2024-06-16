@@ -5,6 +5,7 @@ from app.connection_manager import ConnectionManagerNotification
 from app.database import get_async_session
 from app import oauth2
 from .func_notification import get_rooms_state, online, check_new_messages, update_user_status, get_pending_invitations, check_user_password
+from .func_notification import user_online_start, user_online_end
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -24,6 +25,7 @@ async def web_private_notification(
     session: AsyncSession = Depends(get_async_session)):
 
     user = None
+    online_session_id = None
     try:
         user = await oauth2.get_current_user(token, session)
         if user.blocked:
@@ -33,6 +35,9 @@ async def web_private_notification(
         await manager.connect(websocket, user.id)
         logger.info(f"WebSocket connected for user {user.id}")
         await update_user_status(session, user.id, True)
+        
+        online_session_id = await user_online_start(session, user.id)
+        
     except Exception as e:
         logger.error(f"Error in WebSocket setup for user: {e}", exc_info=True)
         await websocket.close(code=1008)
@@ -83,6 +88,9 @@ async def web_private_notification(
         if user:
             print("WebSocket disconnected")
             await update_user_status(session, user.id, False)
+            if online_session_id:
+                await user_online_end(session, online_session_id)
+                
         await session.close()
         logger.info(f"WebSocket session closed for user {user.id}")
 
