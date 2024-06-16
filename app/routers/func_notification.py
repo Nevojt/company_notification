@@ -161,4 +161,27 @@ async def update_user_status(session: AsyncSession, user_id: int, is_online: boo
         logger.info(f"User status updated for user {user_id}: {is_online}")
     except Exception as e:
         logger.error(f"Error updating user status for user {user_id}: {e}", exc_info=True)
+        
+        
+async def check_user_password(session: AsyncSession, user_id: int, clear: bool):
+    try:
+        result = await session.execute(select(models.User.password_changed).where(models.User.id == user_id))
+        user_password_changed = result.scalar_one_or_none()
+        
+        if clear == True:
+            # Встановлюємо поле password_changed на NULL
+            await session.execute(
+                update(models.User)
+                .where(models.User.id == user_id)
+                .values(password_changed=None)
+            )
+            await session.commit()
+
+        return user_password_changed
+    except Exception as e:
+        logger.error(f"Error checking user password: {e}", exc_info=True)
+        return None
+
+
+        
 

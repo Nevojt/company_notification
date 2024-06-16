@@ -4,7 +4,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from app.connection_manager import ConnectionManagerNotification
 from app.database import get_async_session
 from app import oauth2
-from .func_notification import get_rooms_state, online, check_new_messages, update_user_status, get_pending_invitations
+from .func_notification import get_rooms_state, online, check_new_messages, update_user_status, get_pending_invitations, check_user_password
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -42,9 +42,18 @@ async def web_private_notification(
         new_messages_set = set()
         new_invitations_set = set()
         rooms_last_state = await get_rooms_state(session)
+        password_changed_state = await check_user_password(session, user.id, False)
+        print(f"First {password_changed_state}")
         while True:
             await websocket.receive_text()
-                        
+            
+            password_changed = await check_user_password(session, user.id, False)
+            print(f"Second {password_changed}")
+            if password_changed_state != password_changed:
+                password_changed_state = password_changed
+                await check_user_password(session, user.id, True)
+                await websocket.send_json({"logout": True})
+                       
             new_messages_info = await check_new_messages(session, user.id)
 
             # Using set for efficient operations
