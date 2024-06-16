@@ -46,10 +46,9 @@ async def web_private_notification(
         while True:
             await websocket.receive_text()
             
-            password_changed = await check_user_password(session, user.id, False)
+            password_changed = await check_user_password(session, user.id, True)
             if password_changed_state != password_changed:
                 password_changed_state = password_changed
-                await check_user_password(session, user.id, True)
                 await websocket.send_json({"logout": True})
                        
             new_messages_info = await check_new_messages(session, user.id)
