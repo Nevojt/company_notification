@@ -164,12 +164,27 @@ async def update_user_status(session: AsyncSession, user_id: int, is_online: boo
         
         
 async def check_user_password(session: AsyncSession, user_id: int, clear: bool):
+    """
+    Check if the password of a user has been changed and optionally clear the password_changed field.
+
+    Args:
+        session (AsyncSession): The database session.
+        user_id (int): The ID of the user.
+        clear (bool): If True, the password_changed field will be cleared.
+
+    Returns:
+        datetime.datetime or None: The date and time when the password was last changed, or None if the user does not exist.
+
+    Raises:
+        Exception: If an error occurs while checking or updating the password_changed field.
+    """
     try:
+        # Fetch the password_changed field for the specified user
         result = await session.execute(select(models.User.password_changed).where(models.User.id == user_id))
         user_password_changed = result.scalar_one_or_none()
         
         if clear == True:
-            # Встановлюємо поле password_changed на NULL
+            # Update password_changed field to NULL
             await session.execute(
                 update(models.User)
                 .where(models.User.id == user_id)

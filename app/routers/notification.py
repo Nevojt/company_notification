@@ -43,12 +43,10 @@ async def web_private_notification(
         new_invitations_set = set()
         rooms_last_state = await get_rooms_state(session)
         password_changed_state = await check_user_password(session, user.id, False)
-        print(f"First {password_changed_state}")
         while True:
             await websocket.receive_text()
             
             password_changed = await check_user_password(session, user.id, False)
-            print(f"Second {password_changed}")
             if password_changed_state != password_changed:
                 password_changed_state = password_changed
                 await check_user_password(session, user.id, True)
