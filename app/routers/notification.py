@@ -36,7 +36,7 @@ async def web_private_notification(
         logger.info(f"WebSocket connected for user {user.id}")
         await update_user_status(session, user.id, True)
         
-        online_session_id = await user_online_start(session, user.id)
+        # online_session_id = await user_online_start(session, user.id)
         
     except Exception as e:
         logger.error(f"Error in WebSocket setup for user: {e}", exc_info=True)
@@ -88,8 +88,8 @@ async def web_private_notification(
         if user:
             print("WebSocket disconnected")
             await update_user_status(session, user.id, False)
-            if online_session_id:
-                await user_online_end(session, online_session_id)
+            # if online_session_id:
+            #     await user_online_end(session, online_session_id)
                 
         await session.close()
         logger.info(f"WebSocket session closed for user {user.id}")

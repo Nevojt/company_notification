@@ -8,9 +8,10 @@ import pytz
 from app import models
 from app.config import settings
 from sqlalchemy.future import select
-from sqlalchemy import update, insert
+from sqlalchemy import Interval, update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql import func
 
 from app.schemas import InvitationSchema
 import base64
@@ -205,31 +206,56 @@ async def user_online_start(session: AsyncSession, user_id: int):
     try:
         timezone = pytz.timezone('UTC')
         current_time_utc = datetime.now(timezone)
-        logger.info(f"Inserting online session start for user {user_id} at {current_time_utc}")
-        
+        logger.info(f"Updating online session start for user {user_id} at {current_time_utc}")
+
+        # Перевірка наявності запису
         result = await session.execute(
-            insert(models.UserOnlineTime).values(user_id=user_id, session_start=current_time_utc).returning(models.UserOnlineTime.id)
+            select(models.UserOnlineTime).where(models.UserOnlineTime.user_id == user_id)
         )
-        
-        online_session_id = result.scalar_one()
+        user_online_record = result.scalar_one_or_none()
+
+        if user_online_record is None:
+            # Створення нового запису
+            await session.execute(
+                insert(models.UserOnlineTime).values(user_id=user_id, session_start=current_time_utc)
+            )
+        else:
+            # Оновлення існуючого запису
+            await session.execute(
+                update(models.UserOnlineTime)
+                .where(models.UserOnlineTime.user_id == user_id)
+                .values(session_start=current_time_utc, session_end=None)
+            )
         await session.commit()
-        logger.info(f"Inserted online session start with ID {online_session_id} for user {user_id}")
         
-        return online_session_id
     except Exception as e:
-        logger.error(f"Error starting user online session: {e}", exc_info=True)
-        return None
+        logger.error(f"Error updating user online session: {e}", exc_info=True)
 
-
-async def user_online_end(session: AsyncSession, session_id: int):
+async def user_online_end(session: AsyncSession, user_id: int):
     try:
         timezone = pytz.timezone('UTC')
         current_time_utc = datetime.now(timezone)
-        await session.execute(
-            update(models.UserOnlineTime)
-            .where(models.UserOnlineTime.id == session_id)
-            .values(session_end=current_time_utc)
+        
+        # Отримати останній запис сесії користувача
+        result = await session.execute(
+            select(models.UserOnlineTime)
+            .where(models.UserOnlineTime.user_id == user_id)
+            .order_by(models.UserOnlineTime.session_start.desc())
+            .limit(1)
         )
-        await session.commit()
+        user_online_record = result.scalar_one()
+        
+        if user_online_record.session_start:
+            session_duration = current_time_utc - user_online_record.session_start
+            
+            await session.execute(
+                update(models.UserOnlineTime)
+                .where(models.UserOnlineTime.id == user_online_record.id)
+                .values(
+                    session_end=current_time_utc,
+                    total_online_time=models.UserOnlineTime.total_online_time + func.cast(session_duration, Interval)
+                )
+            )
+            await session.commit()
     except Exception as e:
         logger.error(f"Error ending user online session: {e}", exc_info=True)
