@@ -36,3 +36,4 @@ jobs:
 
         cd /home/$SSH_USER/notification && \
         ./key_git_script"
+# tets
