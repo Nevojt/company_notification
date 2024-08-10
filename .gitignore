@@ -4,3 +4,4 @@ __pycache__
 /_log
 *.log
 _log
+start_uvicorn

@@ -3,7 +3,7 @@ name: Deploy Notification
 on:
   push:
     branches:
-      - company
+      - master
 
 jobs:
   build-and-deploy:
@@ -28,15 +28,12 @@ jobs:
 
     - name: Deploy to Server
       env:
-        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD_COMPANY }}
-        SSH_HOST: ${{ secrets.SSH_HOST_COMPANY }}
-        SSH_USER: ${{ secrets.SSH_USER_COMPANY }}
+        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        SSH_HOST: ${{ secrets.SSH_HOST }}
+        SSH_USER: ${{ secrets.SSH_USER }}
       run: |
         sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "
-<<<<<<<< HEAD:.github/workflows/master.yml
 
-========
->>>>>>>> e27ef81e847c7c954acddf8be30af368fd2581a8:.github/workflows/company.yml
         cd /home/$SSH_USER/notification && \
         ./key_git_script"
-# test new deploy
+# tets
