@@ -33,10 +33,5 @@ jobs:
         SSH_USER: ${{ secrets.SSH_USER_COMPANY }}
       run: |
         sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "
-<<<<<<<< HEAD:.github/workflows/master.yml
-
-========
->>>>>>>> e27ef81e847c7c954acddf8be30af368fd2581a8:.github/workflows/company.yml
         cd /home/$SSH_USER/notification && \
         ./key_git_script"
-# test new deploy
